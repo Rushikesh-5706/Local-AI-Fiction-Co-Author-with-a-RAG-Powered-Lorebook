@@ -24,6 +24,6 @@ def add_lore(request: LoreRequest):
             embedding=embedding,
         )
         return LoreResponse(status="success", id=doc_id)
-    except RuntimeError as exc:
+    except Exception as exc:
         logger.error("Failed to add lore: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc)) from exc

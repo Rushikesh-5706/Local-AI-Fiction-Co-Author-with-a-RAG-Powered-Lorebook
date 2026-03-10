@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 
 from src.config import settings
-from src.models.schemas import GenerateRequest, GenerateResponse
+from src.models.schemas import GenerateRequest, GenerateResponse, GenerationParameters
 from src.services import chroma_service, embedding_service, llm_service
 
 logger = logging.getLogger(__name__)
@@ -23,9 +23,10 @@ def generate_story(request: GenerateRequest):
             query_embedding=query_embedding,
             top_k=settings.rag_top_k,
         )
-        temperature = request.parameters.temperature
-        top_p = request.parameters.top_p
-        repeat_penalty = request.parameters.repeat_penalty
+        params = request.parameters or GenerationParameters()
+        temperature = params.temperature
+        top_p = params.top_p
+        repeat_penalty = params.repeat_penalty
         story_segment = llm_service.generate(
             prompt=request.prompt,
             context_docs=context_docs,
@@ -34,6 +35,6 @@ def generate_story(request: GenerateRequest):
             repeat_penalty=repeat_penalty,
         )
         return GenerateResponse(story_segment=story_segment)
-    except RuntimeError as exc:
+    except Exception as exc:
         logger.error("Failed to generate story: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc)) from exc

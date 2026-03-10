@@ -1,15 +1,16 @@
 import logging
 
 import httpx
-from jinja2 import Template
+from jinja2 import Environment, StrictUndefined
 
 from src.config import settings
 
 logger = logging.getLogger(__name__)
 
-_persona_prompt: str = None
+_persona_prompt: str | None = None
 
-_PROMPT_TEMPLATE = Template(
+_env = Environment(undefined=StrictUndefined)
+_PROMPT_TEMPLATE = _env.from_string(
     """{{ system_prompt }}
 
 Here is some relevant context from the lorebook:

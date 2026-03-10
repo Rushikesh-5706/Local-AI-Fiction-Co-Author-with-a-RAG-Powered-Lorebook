@@ -6,7 +6,7 @@ from src.config import settings
 
 logger = logging.getLogger(__name__)
 
-_model: SentenceTransformer = None
+_model: SentenceTransformer | None = None
 
 
 def initialize():
