@@ -8,7 +8,7 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 _client: chromadb.HttpClient = None
-_collection = None
+_collection: "chromadb.Collection | None" = None
 
 
 def initialize():
