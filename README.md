@@ -252,6 +252,8 @@ docker-compose exec app python -m pytest tests/ -v
 Alternatively, if you have Python 3.11 and the project dependencies installed locally:
 
 ```bash
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
 python -m pytest tests/ -v
 ```
 
