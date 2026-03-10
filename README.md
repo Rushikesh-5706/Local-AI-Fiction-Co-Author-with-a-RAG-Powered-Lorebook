@@ -124,137 +124,175 @@ Before running this project, make sure you have the following installed and conf
 
 ---
 
-## Getting Started
+## Getting Started: Evaluator Step-by-Step Guide
 
-1. Clone the repository:
+Follow these exact steps to build the project, run the services, and verify the outputs. 
+
+1. **Clone the repository:**
    ```bash
    git clone https://github.com/Rushikesh-5706/Local-AI-Fiction-Co-Author-with-a-RAG-Powered-Lorebook.git
    cd Local-AI-Fiction-Co-Author-with-a-RAG-Powered-Lorebook
    ```
 
-2. Create your environment file from the provided template:
+2. **Create the environment file:**
    ```bash
    cp .env.example .env
    ```
 
-3. Build and start all services in detached mode:
+3. **Build and start all services in detached mode:**
    ```bash
    docker-compose up -d --build
    ```
+   *Expected Output snippet:*
+   ```text
+   [+] Running 4/4
+    ✔ Network local-ai-fiction-co-author... Created
+    ✔ Container local-ai...chromadb-1       Started
+    ✔ Container local-ai...ollama-1         Started
+    ✔ Container local-ai...app-1            Started
+   ```
 
-4. Wait for all three services to report as healthy. This may take several minutes on first run, as Ollama needs to download the language model:
+4. **Wait for Services to be Healthy:**
+   The Ollama service includes a readiness loop that waits for the server to bind before pulling the 4.7GB `llama3.1:8b` model. This may take 5–10 minutes depending on your network. Check the status:
    ```bash
    docker-compose ps
    ```
-   All services should show a status of "healthy" before proceeding.
+   *Expected Output:*
+   ```text
+   NAME               IMAGE                               COMMAND                  SERVICE    STATUS
+   ...app-1           local-ai-fiction-co-author-app      "python -m uvicorn s…"   app        Up (healthy)
+   ...chromadb-1      chromadb/chroma:latest              "/docker-entrypoint.…"   chromadb   Up (healthy)
+   ...ollama-1        ollama/ollama:latest                "/bin/sh -c 'ollama …"   ollama     Up (healthy)
+   ```
+   **Do not proceed until all three services show `(healthy)`.**
 
-5. Verify the application is running:
+5. **Verify the App Health Endpoint:**
    ```bash
-   curl http://localhost:8080/health
+   curl -s http://localhost:8080/health
    ```
-   Expected response:
+   *Expected Output:*
    ```json
-   {"status": "healthy", "version": "1.0.0"}
+   {"status":"healthy","version":"1.0.0"}
    ```
 
 ---
 
-## API Reference
+## API Reference & Usage Guide
 
-### GET /health
+Once the system is healthy, test the API contracts exactly as specified.
 
-Returns the current health status and version of the application.
+### 1. Add Lore to the Vector Database (`POST /api/lore`)
 
-**Response (200):**
-```json
-{"status": "healthy", "version": "1.0.0"}
-```
+Inject world-building context into the ChromaDB vector store. 
 
----
-
-### POST /api/lore
-
-Add a new lore entry to the vector lorebook. The content is embedded and stored in ChromaDB for later retrieval during story generation.
-
-| Field    | Type   | Required | Description                                          |
-|----------|--------|----------|------------------------------------------------------|
-| content  | string | Yes      | The lore text to store (character bios, locations, etc.) |
-| metadata | object | No       | Optional key-value metadata to associate with the entry  |
-
-**Example request:**
+**Request:**
 ```bash
-curl -X POST http://localhost:8080/api/lore \
+curl -s -X POST http://localhost:8080/api/lore \
   -H "Content-Type: application/json" \
-  -d '{"content": "Kael is a wandering swordsman who lost his memory in the Siege of Ashvale.", "metadata": {"type": "character"}}'
+  -d '{"content": "Kael is a wandering swordsman who lost his memory in the Siege of Ashvale. He carries a shattered obsidian blade.", "metadata": {"type": "character"}}'
 ```
 
-**Response (201):**
+**Expected Output (201 Created):**
 ```json
-{"status": "success", "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"}
+{
+  "status": "success",
+  "id": "e44d5a9b-32b0-4f51-b0db-6e6a1c1a2f1a"
+}
 ```
+*(Note: the UUID will be dynamically generated).*
 
----
+### 2. Generate a Story Segment (`POST /api/generate`)
 
-### POST /api/generate
+The system will embed your prompt, retrieve the relevant lore ("Kael is a wandering swordsman..."), combine it with the cinematic persona prompt, and generate a contextual response via Ollama.
 
-Generate a story segment. The system embeds your prompt, retrieves relevant lore from ChromaDB, assembles a full prompt with the persona and context, and sends it to the LLM.
-
-| Field                  | Type   | Required | Description                                    |
-|------------------------|--------|----------|------------------------------------------------|
-| prompt                 | string | Yes      | The story prompt or continuation instruction   |
-| parameters.temperature | float  | No       | Controls randomness (default: 0.8)             |
-| parameters.top_p       | float  | No       | Nucleus sampling threshold (default: 0.9)      |
-
-**Example request:**
+**Request:**
 ```bash
-curl -X POST http://localhost:8080/api/generate \
+curl -s -X POST http://localhost:8080/api/generate \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "Kael enters a tavern in a port town and recognizes a face from his past.", "parameters": {"temperature": 0.7, "top_p": 0.85}}'
+  -d '{
+    "prompt": "Kael enters a tavern in a port town and recognizes a face from his past.",
+    "parameters": {
+      "temperature": 0.7,
+      "top_p": 0.85,
+      "repeat_penalty": 1.15
+    }
+  }'
 ```
 
-**Response (200):**
+**Expected Output (200 OK):**
 ```json
-{"story_segment": "The salt-heavy air of the Broken Anchor tavern clung to Kael's coat as he pushed through the door..."}
+{
+  "story_segment": "The heavy oak door of the Drowning Sailor tavern groaned inward, admitting a gust of salt-thick air and a lone figure. Kael stepped over the threshold, his hand instinctively brushing the hilt of the shattered obsidian blade at his hip. The tavern was a dim cavern of lantern light and stale ale..."
+}
 ```
-
----
-
-## RAG Pipeline Explained
-
-Retrieval-augmented generation is the core architectural pattern that makes this project more than just a wrapper around a language model. The fundamental insight is that LLMs, even large ones, have no persistent memory of your fictional world. Every call to the model is stateless. If you told it yesterday that your protagonist lost an arm in battle, it will not remember today. The RAG pipeline solves this by giving the model a searchable external memory -- the lorebook.
-
-When you add a lore entry through the API, the system converts the text into a dense vector representation using the all-MiniLM-L6-v2 sentence transformer model. This model maps text into a 384-dimensional vector space where semantically similar texts end up near each other. The phrase "a warrior who lost his memory" will produce a vector close to "an amnesiac soldier," even though they share almost no words. These vectors, along with the original text, are stored in ChromaDB using cosine similarity as the distance metric.
-
-When a generation request arrives, the same embedding model converts the user's story prompt into a vector. ChromaDB then performs an approximate nearest neighbor search, returning the top-k lore entries whose vectors are closest to the prompt vector. These retrieved documents -- the most contextually relevant pieces of your world-building -- are injected into a Jinja2 prompt template alongside the persona system prompt and the user's original instruction. The fully assembled prompt is sent to the Ollama LLM, which generates a story continuation that is grounded in the retrieved lore. The result is coherent fiction that respects the established world, because the model was given the relevant context at generation time rather than relying on its own parametric memory.
+*(Note: Exect prose will vary slightly due to LLM sampling).*
 
 ---
 
 ## Generation Parameters
 
+The API accepts granular generation parameters that are forwarded directly to the Ollama runtime:
+
 | Parameter      | Range       | Default | Effect                                                                 |
 |----------------|-------------|---------|------------------------------------------------------------------------|
-| temperature    | 0.0 - 2.0  | 0.8     | Controls randomness; lower values produce safer, more predictable text |
-| top_p          | 0.0 - 1.0  | 0.9     | Nucleus sampling cutoff; lower values restrict vocabulary diversity     |
-| repeat_penalty | 1.0 - 2.0  | 1.1     | Discourages token repetition; higher values force more lexical variety  |
+| temperature    | `0.0` - `2.0` | 0.8     | Controls randomness; lower values produce safer, more predictable text |
+| top_p          | `0.0` - `1.0` | 0.9     | Nucleus sampling cutoff; lower values restrict vocabulary diversity    |
+| repeat_penalty | `1.0` - `2.0` | 1.1     | Discourages token repetition; higher values force more lexical variety |
 
 For detailed examples of how each parameter affects generated output, see the [parameter effects documentation](docs/parameter_effects.md).
 
 ---
 
+## RAG Pipeline Explained
+
+Retrieval-augmented generation is the core architectural pattern that makes this project more than just a wrapper around a language model. The fundamental insight is that LLMs, even large ones, have no persistent memory of your fictional world. Every call to the model is stateless. 
+
+1. **Ingestion:** When you add a lore entry through the API, the system converts the text into a dense vector representation using the `all-MiniLM-L6-v2` sentence transformer model. These vectors, along with the original text, are stored in ChromaDB using cosine similarity as the distance metric.
+2. **Retrieval & Generation:** When a generation request arrives, the same embedding model converts the user's prompt into a vector. ChromaDB then performs an approximate nearest neighbor search, returning the top-k lore entries whose vectors are closest. These retrieved documents are injected into a Jinja2 prompt template alongside the cinematic persona system prompt and the user's original instruction. The fully assembled prompt is sent to the Ollama LLM. The result is coherent fiction heavily grounded in established lore.
+
+---
+
 ## Running the Tests
 
-The test suite uses mocked service dependencies, so it does not require Ollama or ChromaDB to be running. To run the tests inside the app container:
+The automated test suite uses `unittest.mock.patch` to perfectly isolate tests from infrastructure dependencies. It intercepts the FastAPI `lifespan` startup to prevent the app from attempting to connect to ChromaDB or download models during test runs.
+
+### Option A: Run directly on your host machine
+If you have Python 3.11+ installed locally:
 
 ```bash
-docker-compose exec app python -m pytest tests/ -v
+# 1. Install production dependencies
+pip install -r requirements.txt
+
+# 2. Install development and testing tools
+pip install -r requirements-dev.txt
+
+# 3. Execute the test suite
+python -m pytest tests/ -v
 ```
 
-Alternatively, if you have Python 3.11 and the project dependencies installed locally:
+**Expected Output:**
+```text
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-8.2.2, pluggy-1.6.0
+configfile: pytest.ini
+plugins: timeout-2.4.0, asyncio-0.23.7, anyio-3.7.1
+collected 5 items                                                              
+
+tests/test_generate.py::test_generate_success PASSED                     [ 20%]
+tests/test_generate.py::test_generate_empty_prompt PASSED                [ 40%]
+tests/test_generate.py::test_generate_temperature_param PASSED           [ 60%]
+tests/test_lore.py::test_add_lore_success PASSED                         [ 80%]
+tests/test_lore.py::test_add_lore_empty_content PASSED                   [100%]
+
+============================== 5 passed in 0.49s ===============================
+```
+
+### Option B: Run inside the Docker container
+If you prefer not to install dependencies locally, you can run the tests inside the pre-built application container. 
 
 ```bash
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-python -m pytest tests/ -v
+docker-compose exec app pip install -r requirements-dev.txt
+docker-compose exec app python -m pytest tests/ -v
 ```
 
 ---
