@@ -2,13 +2,14 @@ import logging
 import uuid
 
 import chromadb
+from chromadb import Collection
 
 from src.config import settings
 
 logger = logging.getLogger(__name__)
 
 _client: chromadb.HttpClient = None
-_collection: "chromadb.Collection | None" = None
+_collection: Collection | None = None
 
 
 def initialize():
