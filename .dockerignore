@@ -1,0 +1,13 @@
+.env
+.git
+__pycache__
+*.pyc
+venv/
+.venv/
+chroma_data/
+ollama_data/
+docs/
+tests/
+*.md
+!prompts/*.md
+.pytest_cache/
