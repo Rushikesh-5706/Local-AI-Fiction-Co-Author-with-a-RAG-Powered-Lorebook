@@ -61,5 +61,6 @@ def test_generate_temperature_param(mock_embedding_service, mock_chroma_service,
 
     assert response.status_code == 200
     mock_llm_service.generate.assert_called_once()
-    call_kwargs = mock_llm_service.generate.call_args
-    assert call_kwargs.kwargs.get("temperature") == 0.3 or call_kwargs[1].get("temperature") == 0.3 or (len(call_kwargs[0]) >= 3 and call_kwargs[0][2] == 0.3)
+    call_kwargs = mock_llm_service.generate.call_args.kwargs
+    assert call_kwargs["temperature"] == 0.3
+    assert call_kwargs["top_p"] == 0.5

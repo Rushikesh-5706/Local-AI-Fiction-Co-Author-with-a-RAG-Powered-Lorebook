@@ -21,6 +21,7 @@ def add_lore(request: LoreRequest):
         doc_id = chroma_service.add_lore(
             content=request.content,
             metadata=request.metadata if request.metadata else {},
+            embedding=embedding,
         )
         return LoreResponse(status="success", id=doc_id)
     except RuntimeError as exc:

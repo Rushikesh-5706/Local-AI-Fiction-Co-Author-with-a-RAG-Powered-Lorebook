@@ -4,7 +4,6 @@ import uuid
 import chromadb
 
 from src.config import settings
-from src.services import embedding_service
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ def initialize():
         raise RuntimeError(f"Could not connect to ChromaDB: {exc}") from exc
 
 
-def add_lore(content: str, metadata: dict) -> str:
+def add_lore(content: str, metadata: dict, embedding: list[float]) -> str:
     """Add a lore document to the ChromaDB collection and return its ID."""
     if _collection is None:
         raise RuntimeError(
@@ -44,7 +43,6 @@ def add_lore(content: str, metadata: dict) -> str:
         )
     try:
         doc_id = str(uuid.uuid4())
-        embedding = embedding_service.embed(content)
         _collection.add(
             ids=[doc_id],
             documents=[content],
