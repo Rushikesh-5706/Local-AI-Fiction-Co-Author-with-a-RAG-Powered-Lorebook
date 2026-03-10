@@ -25,11 +25,13 @@ def generate_story(request: GenerateRequest):
         )
         temperature = request.parameters.temperature
         top_p = request.parameters.top_p
+        repeat_penalty = request.parameters.repeat_penalty
         story_segment = llm_service.generate(
             prompt=request.prompt,
             context_docs=context_docs,
             temperature=temperature,
             top_p=top_p,
+            repeat_penalty=repeat_penalty,
         )
         return GenerateResponse(story_segment=story_segment)
     except RuntimeError as exc:

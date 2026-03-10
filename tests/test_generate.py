@@ -46,7 +46,7 @@ def test_generate_empty_prompt(mock_embedding_service, mock_chroma_service, mock
 @patch("src.routes.generate.chroma_service")
 @patch("src.routes.generate.embedding_service")
 def test_generate_temperature_param(mock_embedding_service, mock_chroma_service, mock_llm_service):
-    """The temperature value from the request body is forwarded to llm_service.generate."""
+    """The temperature, top_p, and repeat_penalty values from the request are forwarded to llm_service."""
     mock_embedding_service.embed.return_value = [0.1, 0.2, 0.3]
     mock_chroma_service.query_lore.return_value = []
     mock_llm_service.generate.return_value = "A tale unfolds."
@@ -55,7 +55,7 @@ def test_generate_temperature_param(mock_embedding_service, mock_chroma_service,
         "/api/generate",
         json={
             "prompt": "Begin the chapter.",
-            "parameters": {"temperature": 0.3, "top_p": 0.5},
+            "parameters": {"temperature": 0.3, "top_p": 0.5, "repeat_penalty": 1.3},
         },
     )
 
@@ -64,3 +64,4 @@ def test_generate_temperature_param(mock_embedding_service, mock_chroma_service,
     call_kwargs = mock_llm_service.generate.call_args.kwargs
     assert call_kwargs["temperature"] == 0.3
     assert call_kwargs["top_p"] == 0.5
+    assert call_kwargs["repeat_penalty"] == 1.3

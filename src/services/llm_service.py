@@ -45,7 +45,7 @@ def initialize():
 
 
 def generate(
-    prompt: str, context_docs: list[str], temperature: float, top_p: float
+    prompt: str, context_docs: list[str], temperature: float, top_p: float, repeat_penalty: float
 ) -> str:
     """Render the prompt template and call the Ollama LLM to generate a story segment."""
     if _persona_prompt is None:
@@ -66,6 +66,7 @@ def generate(
         "options": {
             "temperature": temperature,
             "top_p": top_p,
+            "repeat_penalty": repeat_penalty,
         },
     }
 
