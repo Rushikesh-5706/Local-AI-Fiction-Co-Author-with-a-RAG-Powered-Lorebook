@@ -17,7 +17,7 @@ services:
     command:
       - |
         ollama serve &
-        sleep 5 &&
+        until ollama list > /dev/null 2>&1; do sleep 2; done &&
         ollama pull $${OLLAMA_MODEL:-llama3.1:8b} || true &&
         wait
     environment:
@@ -28,7 +28,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - chroma_data:/chroma/chroma
+      - chroma_data:/data
     environment:
       - IS_PERSISTENT=TRUE
       - ANONYMIZED_TELEMETRY=FALSE
