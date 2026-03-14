@@ -1,4 +1,4 @@
-import logging
+kimport logging
 
 import httpx
 from jinja2 import Environment, StrictUndefined
@@ -8,6 +8,7 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 _persona_prompt: str | None = None
+_http_client: httpx.Client | None = None
 
 _env = Environment(undefined=StrictUndefined)
 _PROMPT_TEMPLATE = _env.from_string(
@@ -25,8 +26,8 @@ Now, continue the story based on this user prompt: {{ user_prompt }}"""
 
 
 def initialize():
-    """Load the persona prompt from disk."""
-    global _persona_prompt
+    """Load the persona prompt from disk and initialize the HTTP client."""
+    global _persona_prompt, _http_client
     try:
         with open(settings.persona_prompt_path, "r", encoding="utf-8") as f:
             _persona_prompt = f.read().strip()
@@ -44,6 +45,9 @@ def initialize():
             f"Failed to read persona prompt file: {settings.persona_prompt_path}: {exc}"
         ) from exc
 
+    _http_client = httpx.Client(timeout=120.0)
+    logger.info("HTTP client initialized")
+
 
 def generate(
     prompt: str, context_docs: list[str], temperature: float, top_p: float, repeat_penalty: float
@@ -52,6 +56,10 @@ def generate(
     if _persona_prompt is None:
         raise RuntimeError(
             "Persona prompt is not loaded. Call initialize() first."
+        )
+    if _http_client is None:
+        raise RuntimeError(
+            "HTTP client is not initialized. Call initialize() first."
         )
 
     rendered_prompt = _PROMPT_TEMPLATE.render(
@@ -72,12 +80,11 @@ def generate(
     }
 
     try:
-        with httpx.Client(timeout=120.0) as client:
-            response = client.post(
-                f"{settings.ollama_base_url}/api/generate",
-                json=request_body,
-            )
-            response.raise_for_status()
+        response = _http_client.post(
+            f"{settings.ollama_base_url}/api/generate",
+            json=request_body,
+        )
+        response.raise_for_status()
     except httpx.HTTPStatusError as exc:
         logger.error("Ollama returned HTTP error: %s", exc)
         raise RuntimeError(
