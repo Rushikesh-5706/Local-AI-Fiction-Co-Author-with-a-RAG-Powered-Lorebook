@@ -8,21 +8,17 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:11434/" ]
-      interval: 30s
+      test: [ "CMD-SHELL", "ollama list || exit 1" ]
+      interval: 10s
       timeout: 10s
       retries: 10
-      start_period: 300s
+      start_period: 30s
     entrypoint: [ "/bin/sh", "-c" ]
     command:
       - |
         ollama serve &
-        echo "Waiting for Ollama to be ready..." &&
-        until curl -sf http://localhost:11434/ > /dev/null 2>&1; do
-          sleep 2
-        done &&
-        echo "Ollama is ready. Pulling model..." &&
-        ollama pull $${OLLAMA_MODEL:-llama3.1:8b} &&
+        sleep 5 &&
+        ollama pull $${OLLAMA_MODEL:-llama3.1:8b} || true &&
         wait
     environment:
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b}
