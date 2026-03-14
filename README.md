@@ -153,7 +153,7 @@ Follow these exact steps to build the project, run the services, and verify the 
    ```
 
 4. **Wait for Services to be Healthy:**
-   The Ollama service starts, waits for the server to be ready, then automatically pulls the     4.7GB `llama3.1:8b` model. This may take 5–10 minutes depending on your network. Check the    status:
+   The Ollama service starts, waits for the server to be ready, then automatically pulls the 4.7GB `llama3.1:8b` model. This may take 5–10 minutes depending on your network. Check the status:
    ```bash
    docker-compose ps
    ```
@@ -165,7 +165,7 @@ Follow these exact steps to build the project, run the services, and verify the 
    ...ollama-1        ollama/ollama:latest                "/bin/sh -c 'ollama …"   ollama     Up (healthy)
    ```
    **Do not proceed until all three services show `(healthy)`.**
-     Note: the Ollama healthcheck uses `ollama list` and the ChromaDB healthcheck uses a bash TCP socket check, as neither container includes curl or wget.
+Note: the Ollama healthcheck uses `ollama list` and the ChromaDB healthcheck uses a bash TCP socket check, as neither container includes curl or wget.
    
 6. **Verify the App Health Endpoint:**
    ```bash
