@@ -161,7 +161,7 @@ Follow these exact steps to build the project, run the services, and verify the 
    ```text
    NAME               IMAGE                               COMMAND                  SERVICE    STATUS
    ...app-1           local-ai-fiction-co-author-app      "python -m uvicorn s…"   app        Up (healthy)
-   ...chromadb-1      chromadb/chroma:latest              "/docker-entrypoint.…"   chromadb   Up (healthy)
+   ...chromadb-1      chromadb/chroma:0.5.3              "/docker-entrypoint.…"   chromadb   Up (healthy)
    ...ollama-1        ollama/ollama:latest                "/bin/sh -c 'ollama …"   ollama     Up (healthy)
    ```
    **Do not proceed until all three services show `(healthy)`.**
