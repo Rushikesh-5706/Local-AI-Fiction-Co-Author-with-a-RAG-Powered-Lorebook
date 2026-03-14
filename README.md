@@ -165,8 +165,9 @@ Follow these exact steps to build the project, run the services, and verify the 
    ...ollama-1        ollama/ollama:latest                "/bin/sh -c 'ollama …"   ollama     Up (healthy)
    ```
    **Do not proceed until all three services show `(healthy)`.**
-
-5. **Verify the App Health Endpoint:**
+     Note: the Ollama healthcheck uses `ollama list` and the ChromaDB healthcheck uses a bash TCP socket check, as neither container includes curl or wget.
+   
+6. **Verify the App Health Endpoint:**
    ```bash
    curl -s http://localhost:8080/health
    ```
